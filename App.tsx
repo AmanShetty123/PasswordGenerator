@@ -1,117 +1,220 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  Text,
+  StyleSheet,
+  Button,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
+import React, {useState} from 'react';
+import {Formik} from 'formik';
+import {object, string, number, date, InferType} from 'yup';
+import BouncyCheckbox from 'react-native-bouncy-checkbox';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+let userSchema = object({
+  passwordLength: number()
+    .min(4, 'passwordLength must be greater than 4')
+    .max(16, 'passwordLength must be less than 16')
+    .required('Length is required'),
+});
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const App = () => {
+  const [lowercase, setLowercase] = useState(true);
+  const [uppercase, setUppercase] = useState(false);
+  const [numbers, setNumbers] = useState(false);
+  const [symbols, setSymbols] = useState(false);
+  const [isPassGenerated, setIsPassGenerated] = useState(false);
+  const [password, setPassword] = useState('');
+  const generatePassword = (passwordLength: number) => {
+    let result = '';
+    let characters = '';
+    if (lowercase) {
+      characters += 'abcdefghijklmnopqrstuvwxyz';
+    }
+    if (uppercase) {
+      characters += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    }
+    if (numbers) {
+      characters += '0123456789';
+    }
+    if (symbols) {
+      characters += '!@#$%^&*';
+    }
+    for (let i = 0; i < passwordLength; i++) {
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length),
+      );
+    }
+    setPassword(result);
+    setIsPassGenerated(true);
+  };
+  const resetPassword = () => {
+    setLowercase(true);
+    setUppercase(false);
+    setNumbers(false);
+    setSymbols(false);
+    setPassword('');
+    setIsPassGenerated(false);
+  };
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
+    <View>
+      <View>
+        <Text style={styles.mainHeading}>Password Generator</Text>
+      </View>
+      <Formik
+        initialValues={{passwordLength: ''}}
+        onSubmit={values => {
+          console.log(values);
+          generatePassword(Number(values.passwordLength));
+        }}
+        validationSchema={userSchema}>
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isValid,
+          handleReset,
+          values,
+        }) => (
+          <View>
+            <View style={styles.formContainer}>
+              <Text style={styles.lengthHeading}>Enter Password Length: </Text>
+              <TextInput
+                style={styles.lengthInput}
+                onChangeText={handleChange('passwordLength')}
+                onBlur={handleBlur('passwordLength')}
+                value={values.passwordLength}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View style={styles.secondContainer}>
+              <Text>Include Lowercase: </Text>
+              <BouncyCheckbox
+                fillColor="red"
+                isChecked={lowercase}
+                onPress={() => setLowercase(!lowercase)}
+              />
+            </View>
+            <View style={styles.secondContainer}>
+              <Text>Include Uppercase: </Text>
+              <BouncyCheckbox
+                fillColor="blue"
+                isChecked={uppercase}
+                onPress={() => setUppercase(!uppercase)}
+              />
+            </View>
+            <View style={styles.secondContainer}>
+              <Text>Include Numbers: </Text>
+              <BouncyCheckbox
+                fillColor="green"
+                isChecked={numbers}
+                onPress={() => setNumbers(!numbers)}
+              />
+            </View>
+            <View style={styles.secondContainer}>
+              <Text>Include Symbols: </Text>
+              <BouncyCheckbox
+                fillColor="orange"
+                isChecked={symbols}
+                onPress={() => setSymbols(!symbols)}
+              />
+            </View>
+            <View style={styles.btnStyles}>
+              <TouchableOpacity
+                disabled={!isValid}
+                style={styles.generateBtn}
+                onPress={() => {
+                  handleSubmit(), setIsPassGenerated(true);
+                }}>
+                <Text
+                  style={{
+                    color: 'black',
+                  }}>
+                  Generate
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.resetBtn}
+                onPress={() => {
+                  handleReset(), resetPassword();
+                }}>
+                <Text
+                  style={{
+                    color: 'black',
+                  }}>
+                  Reset
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View>
+              {isPassGenerated && (
+                <Text
+                  selectable={true}
+                  style={{
+                    alignSelf: 'center',
+                    marginTop: 30,
+                  }}>
+                  {password}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+      </Formik>
     </View>
   );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  mainHeading: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  formContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  lengthHeading: {
+    marginLeft: '5%',
   },
-  highlight: {
-    fontWeight: '700',
+  lengthInput: {
+    marginRight: '10%',
+    width: '15%',
+    borderColor: 'white',
+    borderRadius: 2,
+    borderWidth: 0.6,
+    height: '70%',
+  },
+  generateBtn: {
+    backgroundColor: '#17A9FD',
+    borderRadius: 20,
+    fontWeight: 'bold',
+    padding: 7,
+    marginRight: 10,
+  },
+  resetBtn: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    fontWeight: 'bold',
+    padding: 7,
+  },
+  btnStyles: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: '5%',
+  },
+  secondContainer: {
+    marginLeft: '10%',
+    marginTop: '2%',
+    marginBottom: '2%',
+    width: '70%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });
 
